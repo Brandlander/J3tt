@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
     TrailRenderer tr;
 
     [SerializeField] float walkSpeed;
+    [SerializeField] float runSpeed;
 
     // Fall speeds
     public float fallMultiplier = 2.5f;
@@ -24,7 +25,7 @@ public class PlayerController : MonoBehaviour
     public float dashTime;
 
     bool isFalling;
-    bool dashing = false;
+    bool isRunning;
 
     // Start is called before the first frame update
     void Start()
@@ -37,9 +38,23 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {       
-        float moveHorizontal = Input.GetAxis("Horizontal");   
+        float moveHorizontal = Input.GetAxis("Horizontal");
+        float moveSpeed = walkSpeed;
 
-        Vector2 direction = new Vector2(moveHorizontal * walkSpeed, 0);
+        // Sprint
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            moveSpeed = runSpeed;
+            isRunning = true;
+            anim.SetBool("isRunning", true);
+        }
+        else
+        {
+            isRunning = false;
+            anim.SetBool("isRunning", false);
+        }
+
+        Vector2 direction = new Vector2(moveHorizontal * moveSpeed, 0);
 
         Move(direction);
 
@@ -58,6 +73,7 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && !isFalling)
         {
             rb.velocity = Vector2.up * jumpVelocity;
+            anim.SetTrigger("Jump");
             print("Jump");
         }
 
@@ -66,6 +82,7 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = Vector2.up * upDraftVelocity;
             anim.SetBool("Updraft", true);
+            StartCoroutine(DashTime());
         }
 
         // Dash
@@ -82,7 +99,7 @@ public class PlayerController : MonoBehaviour
                 rb.velocity = Vector2.right * dashSpeed;
             }
             anim.SetBool("dash", true);
-            tr.emitting = true;
+
             StartCoroutine(DashTime());
         }
         
@@ -109,6 +126,7 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator DashTime()
     {
+        tr.emitting = true;
         yield return new WaitForSeconds(dashTime);
         rb.velocity = Vector2.zero;
         anim.SetBool("dash", false);
